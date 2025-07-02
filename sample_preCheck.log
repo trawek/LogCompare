@@ -1,0 +1,7 @@
+[2024-01-15 10:00:01] INFO: System check started
+[2024-01-15 10:00:02] INFO: Checking disk space
+[2024-01-15 10:00:03] INFO: Available space: 500GB
+[2024-01-15 10:00:04] INFO: Memory usage: 45%
+[2024-01-15 10:00:05] ERROR: Network interface eth0 down
+[2024-01-15 10:00:06] INFO: CPU temperature: 45°C
+[2024-01-15 10:00:07] INFO: System check completed
