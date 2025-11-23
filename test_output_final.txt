@@ -1,0 +1,17 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\Norbert\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Norbert\Desktop\log_comparator
+configfile: pyproject.toml
+collecting ... collected 8 items
+
+tests/test_core.py::test_diff_identical PASSED                           [ 12%]
+tests/test_core.py::test_diff_added PASSED                               [ 25%]
+tests/test_core.py::test_diff_removed PASSED                             [ 37%]
+tests/test_core.py::test_diff_changed PASSED                             [ 50%]
+tests/test_core.py::test_diff_structure_for_table PASSED                 [ 62%]
+tests/test_core.py::test_moved_blocks PASSED                             [ 75%]
+tests/test_core.py::test_anchors_logic PASSED                            [ 87%]
+tests/test_core.py::test_ignore_rules_integration PASSED                 [100%]
+
+============================== 8 passed in 0.01s ==============================

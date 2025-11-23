@@ -1,0 +1,6 @@
+# log_comparator/requirements.txt
+jinja2
+WeasyPrint
+pytest
+pyinstaller
+matplotlib

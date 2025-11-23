@@ -1,0 +1,6 @@
+C:\Users\Norbert\Desktop\log_comparator\core.py:82: SyntaxWarning: invalid escape sequence '\g'
+  pattern, f'<span class="{cls}">\g<0></span>', highlighted
+DEBUG: Total diff lines: 14
+DEBUG: Found deleted block at 13-14: This is a very very very very very very very very ...
+DEBUG: Found inserted block at 7-8: This is a very very very very very very very very ...
+Verification report generated at: C:\Users\Norbert\Desktop\log_comparator\verification_report.html

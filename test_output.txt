@@ -1,0 +1,85 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\Norbert\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Norbert\Desktop\log_comparator
+configfile: pyproject.toml
+collecting ... collected 8 items
+
+tests/test_core.py::test_diff_identical PASSED                           [ 12%]
+tests/test_core.py::test_diff_added PASSED                               [ 25%]
+tests/test_core.py::test_diff_removed PASSED                             [ 37%]
+tests/test_core.py::test_diff_changed PASSED                             [ 50%]
+tests/test_core.py::test_diff_structure_for_table PASSED                 [ 62%]
+tests/test_core.py::test_moved_blocks FAILED                             [ 75%]
+tests/test_core.py::test_anchors_logic PASSED                            [ 87%]
+tests/test_core.py::test_ignore_rules_integration FAILED                 [100%]
+
+================================== FAILURES ===================================
+______________________________ test_moved_blocks ______________________________
+
+    def test_moved_blocks():
+        engine = DiffEngine()
+        pre = ["A", "B", "C", "D"]
+        post = ["A", "C", "B", "D"]
+        # Here B moved after C.
+        # Standard diff might say: delete B, match C, insert B. Or replace B with C, replace C with B.
+        # Let's construct a clear move case.
+    
+        pre = ["Start", "MoveMe", "End"]
+        post = ["Start", "End", "MoveMe"]
+    
+        result = engine.diff(pre, post)
+    
+        # We expect "MoveMe" to be moved.
+        # Index 1 in pre (MoveMe) should be moved_from
+        # Index 2 in post (MoveMe) should be moved_to
+    
+        lines = result["lines"]
+        # Line 0: Start (equal)
+        assert lines[0]["tag"] == "equal"
+    
+        # Line 1: MoveMe (moved_from) -> In pre it was at index 1.
+        # In the diff list, this corresponds to the delete block.
+        # Let's find the line with "MoveMe" in pre content.
+    
+        moved_from_found = False
+        moved_to_found = False
+    
+        for line in lines:
+            if line["tag"] == "moved_from" and "MoveMe" in line["pre"]["content_html"]:
+                moved_from_found = True
+            if line["tag"] == "moved_to" and "MoveMe" in line["post"]["content_html"]:
+                moved_to_found = True
+    
+>       assert moved_from_found
+E       assert False
+
+tests\test_core.py:97: AssertionError
+________________________ test_ignore_rules_integration ________________________
+
+    def test_ignore_rules_integration():
+        engine = DiffEngine()
+        # Assuming IGNORE_PATTERNS includes timestamps or similar.
+        # Let's use a pattern we know is in config.py or mock it if needed.
+        # But config.py is imported in core.py.
+        # Let's rely on the fact that we added "last login" pattern.
+    
+        pre = ["last login : 10:00"]
+        post = ["last login : 11:00"]
+    
+        result = engine.diff(pre, post)
+    
+        # Should be identical because of ignore rules
+        assert result["stats"]["identical"] == 1
+        assert result["stats"]["changed"] == 0
+        assert result["lines"][0]["tag"] == "equal"
+        # And content should be preserved
+        assert "10:00" in result["lines"][0]["pre"]["content_html"]
+>       assert "11:00" in result["lines"][0]["post"]["content_html"]
+E       AssertionError: assert '11:00' in 'last login : 10:00'
+
+tests\test_core.py:140: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_core.py::test_moved_blocks - assert False
+FAILED tests/test_core.py::test_ignore_rules_integration - AssertionError: assert '11:00' in 'last login : 10:00'
+========================= 2 failed, 6 passed in 0.03s =========================

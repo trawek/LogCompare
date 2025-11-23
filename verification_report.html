@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Porównanie Logów</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Toolbar */
+      .toolbar {
+        background-color: #fff;
+        padding: 10px 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        z-index: 100;
+      }
+
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .btn {
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+
+      .btn:hover {
+        background-color: #f0f0f0;
+        border-color: #bbb;
+      }
+
+      .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border-color: #0056b3;
+      }
+
+      .btn-primary:hover {
+        background-color: #0069d9;
+      }
+
+      .search-box {
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 200px;
+      }
+
+      /* Main Layout */
+      .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        /* Prevent body scroll, handle in diff-container */
+        position: relative;
+      }
+
+      .diff-container {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: auto;
+        padding-right: 20px;
+        /* Space for minimap */
+        scroll-behavior: smooth;
+      }
+
+      /* Diff Table */
+        z-index: 10;
+        color: #495057;
+        font-weight: 600;
+      }
+
+      .diff-table td {
+        padding: 0 4px;
+        vertical-align: top;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        line-height: 1.4;
+      }
+
+      .line-num {
+        width: 40px;
+        text-align: right;
+        color: #999;
+        background-color: #f8f9fa;
+        border-right: 1px solid #eee;
+        user-select: none;
+        padding-right: 8px;
+      }
+
+      .line-content {
+        padding-left: 8px;
+        width: calc(50% - 40px);
+      }
+
+      /* Diff Colors */
+      .diff-row.equal {
+        background-color: #fff;
+      }
+
+      .diff-row.delete {
+        background-color: #ffeef0;
+        color: #b71c1c;
+      }
+
+      .diff-change-ins {
+        background-color: #c8e6c9;
+        color: #1b5e20;
+      }
+
+      .diff-row.moved_from {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+        text-decoration: line-through;
+      }
+
+      .diff-row.moved_to {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+      }
+
+      /* Syntax Highlighting */
+      .syntax-ip {
+        color: #0066cc;
+        font-weight: bold;
+      }
+
+      .syntax-mac {
+        color: #6f42c1;
+      }
+
+      .syntax-string {
+        color: #22863a;
+      }
+
+      .syntax-date {
+        color: #6a737d;
+      }
+
+      .syntax-error {
+        color: #d73a49;
+        font-weight: bold;
+      }
+
+      .syntax-success {
+        color: #28a745;
+        font-weight: bold;
+      }
+
+      .syntax-keyword {
+        color: #005cc5;
+        font-weight: bold;
+      }
+
+      /* Minimap */
+      .minimap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 15px;
+        height: 100%;
+        background-color: #f8f9fa;
+        border-left: 1px solid #ddd;
+        z-index: 20;
+        cursor: pointer;
+      }
+
+      .minimap-marker {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        /* Minimum height for visibility */
+      }
+
+      .minimap-marker.delete {
+        background-color: #d73a49;
+      }
+
+      .minimap-marker.insert {
+        background-color: #28a745;
+      }
+
+      .minimap-marker.replace {
+        background-color: #ffd33d;
+      }
+
+      .minimap-marker.moved_from,
+      .minimap-marker.moved_to {
+        background-color: #2196f3;
+      }
+
+      /* Folding */
+      .fold-separator {
+        background-color: #f1f8ff;
+        color: #0366d6;
+        text-align: center;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 11px;
+        border-top: 1px solid #e1e4e8;
+        border-bottom: 1px solid #e1e4e8;
+        user-select: none;
+      }
+
+      .fold-separator:hover {
+        background-color: #def;
+      }
+
+      .hidden-row {
+        display: none;
+      }
+
+      /* Current Selection */
+      .current-diff {
+        outline: 2px solid #007bff;
+        z-index: 5;
+        position: relative;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button class="btn" onclick="prevDiff()">&#8593; Poprzednia (P)</button>
+        <button class="btn" onclick="nextDiff()">&#8595; Następna (N)</button>
+        <span id="diff-counter" style="font-size: 12px; color: #666"
+          >0 / 0</span
+        >
+      </div>
+      <div class="toolbar-group">
+        <input
+          type="text"
+          id="search-input"
+          class="search-box"
+          placeholder="Szukaj..."
+        />
+        <button class="btn" onclick="search()">Szukaj</button>
+      </div>
+      <div class="toolbar-group">
+        <button class="btn" id="btn-fold" onclick="toggleFold()">
+          Zwiń identyczne
+        </button>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="diff-container" id="diff-container">
+        <table class="diff-table" id="diff-table">
+          <thead>
+            <tr>
+              <th colspan="2">pre_check.log</th>
+              <th colspan="2">post_check.log</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">1</td>
+              <td class="line-content">
+                <div class="content-wrap">Short line 1</div>
+              </td>
+              <td class="line-num">1</td>
+              <td class="line-content">
+                <div class="content-wrap">Short line 1</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">2</td>
+              <td class="line-content">
+                <div class="content-wrap">last login : <span class="syntax-date">20/11/25</span> <span class="syntax-date">10:00:00</span></div>
+              </td>
+              <td class="line-num">2</td>
+              <td class="line-content">
+                <div class="content-wrap">last login : <span class="syntax-date">20/11/25</span> <span class="syntax-date">10:00:00</span></div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row replace" data-tag="replace">
+              <td class="line-num">3</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class="syntax-keyword">Interface</span> GigabitEthernet1/0/1 is <span class="diff-change-del"><span class="syntax-success">up</span></span></div>
+              </td>
+              <td class="line-num">3</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class="syntax-keyword">Interface</span> GigabitEthernet1/0/1 is <span class="diff-change-ins"><span class="syntax-error">down</span></span></div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row replace" data-tag="replace">
+              <td class="line-num">4</td>
+              <td class="line-content">
+                <div class="content-wrap">IP address is 192.168.1.<span class="diff-change-del">1</span></div>
+              </td>
+              <td class="line-num">4</td>
+              <td class="line-content">
+                <div class="content-wrap">IP address is 192.168.1.<span class="diff-change-ins">2</span></div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">5</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class=<span class="syntax-string">"syntax-mac"</span>><span class="syntax-date">00:11:22</span>:<span class="syntax-date">33:44:55</span></span></div>
+              </td>
+              <td class="line-num">5</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class=<span class="syntax-string">"syntax-mac"</span>><span class="syntax-date">00:11:22</span>:<span class="syntax-date">33:44:55</span></span></div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row replace" data-tag="replace">
+              <td class="line-num">6</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class="syntax-keyword">description</span> &quot;<span class="diff-change-del">Criti</span>c<span class="diff-change-del">al</span> Link&quot;</div>
+              </td>
+              <td class="line-num">6</td>
+              <td class="line-content">
+                <div class="content-wrap"><span class="syntax-keyword">description</span> &quot;<span class="diff-change-ins">Ba</span>c<span class="diff-change-ins">kup</span> Link&quot;</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">7</td>
+              <td class="line-content">
+                <div class="content-wrap">Alarm severity <span class="syntax-error">critical</span> detected</div>
+              </td>
+              <td class="line-num">7</td>
+              <td class="line-content">
+                <div class="content-wrap">Alarm severity <span class="syntax-error">critical</span> detected</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">8</td>
+              <td class="line-content">
+                <div class="content-wrap">COMMON CONTEXT BEFORE</div>
+              </td>
+              <td class="line-num">8</td>
+              <td class="line-content">
+                <div class="content-wrap">COMMON CONTEXT BEFORE</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row moved_to" data-tag="moved_to">
+              <td class="line-num"></td>
+              <td class="line-content">
+                <div class="content-wrap"></div>
+              </td>
+              <td class="line-num">9</td>
+              <td class="line-content">
+                <div class="content-wrap">COMMON CONTEXT AFTER</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">9</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 1</div>
+              </td>
+              <td class="line-num">10</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 1</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">10</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 2</div>
+              </td>
+              <td class="line-num">11</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 2</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row equal" data-tag="equal">
+              <td class="line-num">11</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 3</div>
+              </td>
+              <td class="line-num">12</td>
+              <td class="line-content">
+                <div class="content-wrap">MOVED BLOCK LINE 3</div>
+              </td>
+            </tr>
+            
+            <tr class="diff-row moved_from" data-tag="moved_from">
+              <td class="line-num">12</td>
+              <td class="line-content">
+                <div class="content-wrap">COMMON CONTEXT AFTER</div>
+              </td>
+              <td class="line-num"></td>
+              <td class="line-content">
+                <div class="content-wrap"></div>
+              </td>
+            </tr>
+            
+          </tbody>
+        </table>
+        <div id="minimap" class="minimap">
+          <!-- Markers will be injected by JS -->
+        </div>
+    </div>
+
+    <script>
+      let currentDiffIndex = -1;
+      let diffRows = [];
+      let isFolded = false;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        diffRows = Array.from(
+          document.querySelectorAll(".diff-row:not(.equal)")
+        );
+        updateCounter();
+        generateMinimap();
+
+        // Keyboard navigation
+        document.addEventListener("keydown", function (e) {
+          if (e.target.tagName === "INPUT") return;
+          if (e.key === "n" || e.key === "N") nextDiff();
+          if (e.key === "p" || e.key === "P") prevDiff();
+        });
+
+        // Minimap click
+        document
+          .getElementById("minimap")
+          .addEventListener("click", function (e) {
+            const rect = this.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const percentage = y / rect.height;
+            const container = document.getElementById("diff-container");
+            container.scrollTop = percentage * container.scrollHeight;
+          });
+      });
+
+      function updateCounter() {
+        const counter = document.getElementById("diff-counter");
+        if (diffRows.length > 0) {
+          counter.textContent = `${currentDiffIndex + 1} / ${diffRows.length}`;
+        } else {
+          counter.textContent = "Brak zmian";
+        }
+      }
+
+      function scrollToRow(row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        row.classList.add("current-diff");
+        setTimeout(() => row.classList.remove("current-diff"), 2000);
+      }
+
+      function nextDiff() {
+        if (diffRows.length === 0) return;
+        currentDiffIndex = (currentDiffIndex + 1) % diffRows.length;
+        scrollToRow(diffRows[currentDiffIndex]);
+        updateCounter();
+      }
+
+      function prevDiff() {
+        if (diffRows.length === 0) return;
+        currentDiffIndex =
+          (currentDiffIndex - 1 + diffRows.length) % diffRows.length;
+        scrollToRow(diffRows[currentDiffIndex]);
+        updateCounter();
+      }
+
+      function generateMinimap() {
+        const minimap = document.getElementById("minimap");
+        const table = document.getElementById("diff-table");
+        const rows = table.querySelectorAll("tbody tr");
+        const totalRows = rows.length;
+
+        if (totalRows === 0) return;
+
+        // Use a canvas or just simple divs? Divs are easier for now.
+        // Optimization: Don't create a div for every row, only for changes.
+
+        rows.forEach((row, index) => {
+          if (row.classList.contains("equal")) return;
+
+          const marker = document.createElement("div");
+          marker.className = `minimap-marker ${row.dataset.tag}`;
+          // Calculate position percentage
+          const top = (index / totalRows) * 100;
+          marker.style.top = `${top}%`;
+          // Height based on 1 row, but at least 2px
+          const height = (1 / totalRows) * 100;
+          marker.style.height = `max(2px, ${height}%)`;
+
+          minimap.appendChild(marker);
+        });
+      }
+
+      function toggleFold() {
+        isFolded = !isFolded;
+        const btn = document.getElementById("btn-fold");
+        const rows = document.querySelectorAll(".diff-row.equal");
+        const context = 2; // Lines of context to keep
+
+        if (isFolded) {
+          btn.textContent = "Rozwiń wszystko";
+          btn.classList.add("btn-primary");
+
+          // Simple folding logic: hide all equal rows that are not near a change
+          // This is a bit heavy for DOM, but let's try.
+
+          // First, mark all as hidden
+          rows.forEach((row) => row.classList.add("hidden-row"));
+
+          // Then unhide context
+          // We need to iterate over ALL rows to find changes and unhide neighbors
+          const allRows = Array.from(document.querySelectorAll(".diff-row"));
+
+          for (let i = 0; i < allRows.length; i++) {
+            if (!allRows[i].classList.contains("equal")) {
+              // This is a change. Unhide context before and after.
+              for (
+                let j = Math.max(0, i - context);
+                j <= Math.min(allRows.length - 1, i + context);
+                j++
+              ) {
+                allRows[j].classList.remove("hidden-row");
+              }
+            }
+          }
+
+          // Add separators? (Optional for now, just hiding is a good start)
+        } else {
+          btn.textContent = "Zwiń identyczne";
+          btn.classList.remove("btn-primary");
+          rows.forEach((row) => row.classList.remove("hidden-row"));
+        }
+      }
+
+      function search() {
+        const query = document
+          .getElementById("search-input")
+          .value.toLowerCase();
+        if (!query) return;
+
+        // Find first row containing text
+        const rows = document.querySelectorAll(".diff-row");
+        for (let row of rows) {
+          if (row.innerText.toLowerCase().includes(query)) {
+            scrollToRow(row);
+            break;
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

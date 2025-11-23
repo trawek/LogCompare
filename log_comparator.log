@@ -1,0 +1,18 @@
+2025-07-04 09:22:56,171 ERROR Error: resource_path() takes 1 positional argument but 2 were given
+NoneType: None
+2025-07-04 09:24:55,169 ERROR Error: resource_path() takes 1 positional argument but 2 were given
+NoneType: None
+2025-07-08 02:53:08,656 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 02:53:44,936 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 02:55:34,126 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 02:59:53,420 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 03:00:02,495 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 03:11:17,825 ERROR Error: No log files found.
+NoneType: None
+2025-07-08 03:12:34,329 ERROR Error: No log files found.
+NoneType: None
